@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>test</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+        <script type="text/javascript" src="../third-party/yui-min.js"></script>
+        <script type="text/javascript" src="../third-party/yuitest-min.js"></script>
+        <script type="text/javascript" src="TestRunner.js"></script>
+
+        <script type="text/javascript" src="../src/namespaces.js"></script>
+        <script type="text/javascript" src="../src/templates.js"></script>
+    </head>
+    <body>
+        <div></div>
+
+        <script type="text/javascript">
+(function() {
+    var template = app.goodies.template;
+
+    var testRunner = new TestRunner(new YUITest.TestCase({
+        name: "Template Endgine Tests",
+
+        "is a function": function() {
+            YUITest.Assert.isFunction(template);
+        },
+
+        "method getSource returns template passed to constructor": function() {
+            var t = template('<b>{name}</b>');
+            YUITest.Assert.areEqual('<b>{name}</b>', t.getSource());
+        },
+
+        "when rendering data from passed object is substituted into template": function() {
+            var t = template('<b>{name}</b>');
+            YUITest.Assert.areEqual('<b>123</b>', t({name: '123'}));
+        },
+
+        "repeatable placeholders are filled with the same value": function() {
+            var t = template('<b>{name}</b>{name}{name}[{name}]');
+            YUITest.Assert.areEqual('<b>123</b>123123[123]', t({name: '123'}));
+        },
+
+        "placeholders with no data are replaced with empty strings": function() {
+            var t = template("{placeholder}, {asd}").extend({
+                placeholder: template(undefined)
+            });
+
+            YUITest.Assert.areEqual(", 1", t({asd: "1"}));
+        },
+
+        "placeholders can be replaced with the result of callback function": function() {
+            var t = template('<b>{name}</b>');
+            YUITest.Assert.areEqual('<b>qwe</b>', t({name: function() { return "qwe"; }}));
+        },
+
+        "callback function accepts two arguments: template data and key": function() {
+            var t = template('<b>{name}</b>');
+            t({name: function(td, key) {
+                    YUITest.ObjectAssert.areEqual({
+                            source: '<b>{name}</b>'
+                        }, td);
+                    YUITest.Assert.areEqual('name', key);
+                    return "qwe";
+                }});
+        },
+
+        "templates can be preloaded with data": function() {
+            var t = template('{a}, {b} & {c}');
+            t.preload({a: 12, b: 24});
+            YUITest.Assert.areEqual('12, 24 & ', t());
+        },
+
+        "method getData returns data preloaded into template": function() {
+            var t = template('<b>{a}{b}{c}</b>');
+            t.preload({a: "a", c: 123123123});
+            YUITest.ObjectAssert.areEqual(t.getData(), {a: "a", c: 123123123});
+        },
+
+        "method prerender returns string with substituded data which was preloaded": function() {
+            var t = template('<b>{a}{b}{c}</b>');
+            t.preload({a: 123, c: 'qaz'});
+            YUITest.Assert.areEqual('<b>123{b}qaz</b>', t.prerender());
+        },
+
+        "when extending template placeholders are filled with child template": function() {
+            var t = template('<b>{name}</b>');
+            var n = template('<i>{name}</i>');
+            var tn = t.extend({name:n});
+            YUITest.Assert.areEqual('<b><i>{name}</i></b>', tn.getSource());
+        },
+
+        "extended templates are rendering just like simple templates": function(){
+            var n = template('{a}{more}').extend({more: template('{b}{c}')});
+            YUITest.Assert.areEqual('123', n({a:1,b:2,c:3}));
+        },
+
+        "method extend allowes extending with constants": function(){
+            var r = template('<div>{b}</div>{a}').extend({b: 'asd', a: '<b>{data}</b>'})({data: 123});
+            YUITest.Assert.areEqual('<div>asd</div><b>123</b>', r);
+        },
+
+        "extending and rendering template can be done in single line": function(){
+            var r = template('<div>{b}</div>{a}').extend({b: 'asd', a: template('<b>{data}</b>')})({data: 123});
+            YUITest.Assert.areEqual('<div>asd</div><b>123</b>', r);
+        },
+
+        "extended templates can be preloaded with data": function() {
+            var t = template('{a}, {b} & {c}').extend({c: template('{c}, {d}, {a}')});
+            t.preload({a: 12, b: 24, c: 36, d: 48});
+            YUITest.Assert.areEqual('12, 24 & 36, 48, 12', t());
+        },
+
+        "templates can be extended with preloaded templates": function() {
+            var t1 = template('{a}, {b} & {c}');
+            var t2 = template('{c}, {d}, {a}');
+            t2.preload({a: '<<a>>', d: 'ddd'});
+            var t = t1.extend({c: t2});
+
+            YUITest.Assert.areEqual('<<a>>, 24 & 36, ddd, <<a>>', t({b: 24, c: 36}));
+        },
+    }));
+
+    testRunner.run();
+})();
+        </script>
+    </body>
+</html>
+
+
